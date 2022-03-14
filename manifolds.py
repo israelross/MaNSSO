@@ -1,6 +1,5 @@
 import numpy as np
-import scipy as sp
-import numpy.linalg as la
+import scipy.linalg as la
 
 class Manifold:
     """
@@ -46,7 +45,7 @@ class Manifold:
 
 class ManifoldWithProjectionRetraction(Manifold):
     """
-    Calculates automatically the retraction
+    Calculates automatically the retraction from projection.
     """
     def __init__(self):
         super(ManifoldWithProjectionRetraction, self).__init__()
@@ -82,9 +81,12 @@ class StiefelManifold(ManifoldWithProjectionRetraction):
 
     def project_vector_to_tangent(self, point, vector):
         if point.shape != (self._d, self._p) or vector.shape != (self._d, self._p):
-            raise "Wrong shape of point"
+            raise Exception("Wrong shape of point")
         skew = 0.5 * (point.T.dot(vector) - vector.T.dot(point))
         return (np.eye(self._d) - point.dot(point.T)).dot(vector) + point.dot(skew)
 
     def random_point(self):
         return self.project(np.random.normal(0, 1, (self._d, self._p)))
+
+    def retract(self, point, vector):
+        return (point + vector).dot(la.inv(la.sqrtm(np.eye(self._p, self._p) + vector.T.dot(vector)))).real

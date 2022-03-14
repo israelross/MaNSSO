@@ -1,11 +1,10 @@
 import numpy as np
-import scipy as sp
 import numpy.linalg as la
 
 
 class SmoothFunction:
     """
-    A smooth function f on an Euclidean space
+    An abstract class of smooth function f on an Euclidean space
     """
     def __init__(self):
         self.L = None
@@ -31,7 +30,7 @@ class L2PCA(SmoothFunction):
     """
     This function is
     $$
-    f(A) = Tr(A A^T X X^T)
+    f(A) = -Tr(A A^T X X^T)
     $$
     where $X$ is the data matrix. In fact in this function is initialized either with $X$ or with $X X^T$.
     """
@@ -49,7 +48,8 @@ class L2PCA(SmoothFunction):
         self.M = 2 * np.sqrt(p) * self._cov_norm
 
     def perform(self, x):
-        return -np.trace(self._cov.dot(x.dot(x.T)))
+        return -np.sum(x * self._cov.dot(x))
+        # return -np.trace(self._cov.dot(x.dot(x.T)))
 
     def grad(self, x):
         return -2 * self._cov.dot(x)
@@ -77,7 +77,26 @@ class LDA(SmoothFunction):
         return (x.T.dot(self.Sb + self.Sb.T) - (f/g) * x.T.dot(self.Sw + self.Sw.T))/g
 
 
+class f_zero(SmoothFunction):
+    """
+    Constant zero function
+    """
+    def __init__(self):
+        super(f_zero, self).__init__()
+        self.L = 0
+        self.M = 0
+
+    def perform(self, x):
+        return 0
+
+    def grad(self, x):
+        return np.zeros(x.shape)
+
+
 class NonSmoothConvexFunction:
+    """
+    An abstract class for a non-smooth convex prox-tractable function
+    """
     def __init__(self):
         self.D = None
         pass
@@ -92,7 +111,7 @@ class NonSmoothConvexFunction:
     def prox(self, x, mu):
         """
         :param x: a point in the dimension of the input of g
-        :param mu: \geq 0
+        :param mu: > 0
         :return: prox_{\mu g} (x)
         """
         pass
@@ -100,7 +119,7 @@ class NonSmoothConvexFunction:
     def moreau(self, x, mu):
         """
         :param x:  a point in the dimension of the input of g
-        :param mu: \geq 0
+        :param mu: > 0
         :return: M_g ^\mu (x)
         """
         y = self.prox(x, mu)
@@ -127,5 +146,48 @@ class L1Norm(NonSmoothConvexFunction):
         return res
 
     def subgrad(self, x):
-        return np.sign(x)
+        return self._lambda * np.sign(x)
 
+
+class L21Norm(NonSmoothConvexFunction):
+    def __init__(self, m, r):
+        super(L21Norm, self).__init__()
+        self.m = m
+        self.r = r
+
+    def perform(self, x):
+        return np.sum(la.norm(x, axis=1))
+
+    def prox(self, x, mu):
+        norms = la.norm(x, axis=1)
+        return ((1 - mu / (np.maximum(mu, norms))) * x.T).T
+
+    def subgrad(self, x):
+        norms = la.norm(x, axis=1)
+        return (x.T / norms).T
+
+
+class L1NormSubsetIndices(NonSmoothConvexFunction):
+    """
+    This fdnction is $\lambda$ times the $\ell_1$ norm of the input.
+    """
+    def __init__(self, d, p, inds):
+        super(L1NormSubsetIndices, self).__init__()
+        self.D = d * p * len(inds[0])
+        self._inds = inds
+
+    def perform(self, x):
+        return np.sum(np.abs(x[self._inds]))
+
+    def prox(self, x, mu):
+        res = np.array(x)
+        y = x[self._inds]
+        y[y > mu] -= mu
+        y[y < -mu] += mu
+        res[self._inds] = y
+        return res
+
+    def subgrad(self, x):
+        res = np.zeros(x.shape)
+        res[self._inds] = np.sign(res[self._inds])
+        return res

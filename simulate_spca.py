@@ -71,7 +71,7 @@ class simulator_solver:
 
         if alg == 'RSG':
             gminimizer = SubgradientManifoldMinimizer(self._M, self._f, self._g)
-            res, times = gminimizer.optimize(max_iter=150, ret_iter_list=True, time_limit=self._time_limit,
+            res, times = gminimizer.optimize(max_iter=np.inf, ret_iter_list=True, time_limit=self._time_limit,
                                                  gamma_oracle=oracle, init_point=self._init_point)
         self._results[name] = run_results(times,
                                           [self._f.perform(i) + self._g.perform(i) for i in res],
@@ -103,35 +103,37 @@ class simulator_solver:
             self._results[method].plot(fig)
 
 
-TIME_LIMIT = 2
-REPS = 20
-A2_ORACLES = {
-    '0.1_exp0.33': lambda i: 0.1 / np.power(i, 1/3),
-    '0.1_exp0.66': lambda i: 0.1 / np.power(i, 2/3),
-    '0.1_exp0.5': lambda i: 0.1 / np.power(i, 1/2)
-}
-RSG_EXP_ORACLES = {
-    '0.7exp': lambda i: np.power(0.7, i),
-    '0.8exp': lambda i: np.power(0.8, i),
-    '0.9exp': lambda i: np.power(0.9, i)
-}
-RSG_SQRT_ORACLES = {
-    'sqrt_1': lambda i: 1 / np.sqrt(i),
-    'sqrt_0.1': lambda i: 0.1 / np.sqrt(i),
-    'sqrt_0.01': lambda i: 0.01 / np.sqrt(i)
-}
-for p in [8, 16, 24, 32, 40]:
-    for var in [2, 4, 8, 16, 32]:
-        l = []
-        for i in range(REPS):
-            ss = simulator_solver(p, var, TIME_LIMIT)
-            for o in A2_ORACLES:
-                ss.run_method('A2', A2_ORACLES[o], o)
-            for o in RSG_EXP_ORACLES:
-                ss.run_method('RSG', RSG_EXP_ORACLES[o], o)
-            for o in RSG_SQRT_ORACLES:
-                ss.run_method('RSG', RSG_SQRT_ORACLES[o], o)
-            l.append(ss)
-        with open('SPCA_last/run_%i_%i.pkl' % (p, var), 'wb') as f:
-            pickle.dump(l, f)
-        print('finished %i : %i' % (p, var))
+
+if __name__ == "__main__":
+    TIME_LIMIT = 2
+    REPS = 20
+    A2_ORACLES = {
+        '0.1_exp0.33': lambda i: 0.1 / np.power(i, 1/3),
+        '0.1_exp0.66': lambda i: 0.1 / np.power(i, 2/3),
+        '0.1_exp0.5': lambda i: 0.1 / np.power(i, 1/2)
+    }
+    RSG_EXP_ORACLES = {
+        '0.7exp': lambda i: np.power(0.7, i),
+        '0.8exp': lambda i: np.power(0.8, i),
+        '0.9exp': lambda i: np.power(0.9, i)
+    }
+    RSG_SQRT_ORACLES = {
+        'sqrt_1': lambda i: 1 / np.sqrt(i),
+        'sqrt_0.1': lambda i: 0.1 / np.sqrt(i),
+        'sqrt_0.01': lambda i: 0.01 / np.sqrt(i)
+    }
+    for p in [8, 16, 24, 32, 40]:
+        for var in [2, 4, 8, 16, 32]:
+            l = []
+            for i in range(REPS):
+                ss = simulator_solver(p, var, TIME_LIMIT)
+                for o in A2_ORACLES:
+                    ss.run_method('A2', A2_ORACLES[o], o)
+                for o in RSG_EXP_ORACLES:
+                    ss.run_method('RSG', RSG_EXP_ORACLES[o], o)
+                # for o in RSG_SQRT_ORACLES:
+                #     ss.run_method('RSG', RSG_SQRT_ORACLES[o], o)
+                l.append(ss)
+            with open('SPCA_last/run_%i_%i.pkl' % (p, var), 'wb') as f:
+                pickle.dump(l, f)
+            print('finished %i : %i' % (p, var))

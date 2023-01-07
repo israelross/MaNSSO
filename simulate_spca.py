@@ -131,8 +131,8 @@ if __name__ == "__main__":
                     ss.run_method('A2', A2_ORACLES[o], o)
                 for o in RSG_EXP_ORACLES:
                     ss.run_method('RSG', RSG_EXP_ORACLES[o], o)
-                # for o in RSG_SQRT_ORACLES:
-                #     ss.run_method('RSG', RSG_SQRT_ORACLES[o], o)
+                for o in RSG_SQRT_ORACLES:
+                    ss.run_method('RSG', RSG_SQRT_ORACLES[o], o)
                 l.append(ss)
             with open('SPCA_last/run_%i_%i.pkl' % (p, var), 'wb') as f:
                 pickle.dump(l, f)
